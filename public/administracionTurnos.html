@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Administración de Turnos - Clínica Magaña</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #007bff;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tbody tr:hover {
+      background-color: #e6f0ff;
+    }
+    input[type="datetime-local"] {
+      width: 160px;
+      font-size: 12px;
+    }
+    button.estado-btn {
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Administración de Turnos</h1>
+  <table id="tabla-turnos">
+    <thead>
+      <tr>
+        <th>DNI</th>
+        <th>Apellido y Nombre</th>
+        <th>Fecha Nac.</th>
+        <th>Obra Social</th>
+        <th>Celular</th>
+        <th>Email</th>
+        <th>Especialidad</th>
+        <th>Fecha Solicitada</th>
+        <th>Preferencia Horaria</th>
+        <th>Rango Horario</th>
+        <th>Registro Ras</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Los turnos se cargarán aquí -->
+    </tbody>
+  </table>
+
+  <script>
+    // Función para convertir datetime-local a formato hh:mm AM/PM
+    function formatoHoraAMPM(datetime) {
+      const date = new Date(datetime);
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // si es 0, poner 12
+      return `${hours}:${minutes} ${ampm}`;
+    }
+
+    async function cargarTurnos() {
+      try {
+        const res = await fetch('/api/turnos');
+        if (!res.ok) throw new Error('Error en la respuesta del servidor');
+        const turnos = await res.json();
+        const tbody = document.querySelector('#tabla-turnos tbody');
+        tbody.innerHTML = '';
+
+        turnos.forEach(turno => {
+          const tr = document.createElement('tr');
+
+          // Estado inicial según BD
+          let estadoBtnText = turno.estadoRegistro === 'asignado' ? 'Asignado' : 'No asignado';
+
+          // Registro Ras: mostrar directamente el valor de la BD sin convertir a Date
+          let registroRasValue = turno.registroRas ? turno.registroRas : '';
+
+          tr.innerHTML = `
+            <td>${turno.dni}</td>
+            <td>${turno.apellidoNombre}</td>
+            <td>${turno.fechaNacimiento}</td>
+            <td>${turno.obraSocial}</td>
+            <td>${turno.numeroCelular}</td>
+            <td>${turno.mail}</td>
+            <td>${turno.especialidad}</td>
+            <td>${turno.fechaSolicitadaPaciente}</td>
+            <td>${turno.preferenciaHorariaPaciente}</td>
+            <td>${turno.rangoHorarioPacientes}</td>
+            <td><input type="datetime-local" id="registro-${turno.dni}" value="${registroRasValue}"></td>
+            <td><button class="estado-btn" id="btn-${turno.dni}">${estadoBtnText}</button></td>
+          `;
+          tbody.appendChild(tr);
+
+          // Evento del botón de estado
+          const btn = document.getElementById(`btn-${turno.dni}`);
+          const input = document.getElementById(`registro-${turno.dni}`);
+
+          btn.addEventListener('click', async () => {
+            const fechaRas = input.value;
+            if (!fechaRas) {
+              alert('Por favor, ingresá la fecha y hora en Registro Ras antes de asignar.');
+              return;
+            }
+
+            // Cambiar el texto del botón
+            const nuevoEstado = btn.textContent === 'No asignado' ? 'Asignado' : 'No asignado';
+            btn.textContent = nuevoEstado;
+
+            // Guardar en la base de datos
+            try {
+              const res = await fetch('/api/actualizar-turno', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  dni: turno.dni,
+                  registroRas: fechaRas,
+                  estadoRegistro: nuevoEstado.toLowerCase()
+                })
+              });
+              const data = await res.json();
+              if (data.error) {
+                alert('Error al actualizar turno: ' + data.error);
+              } else if (nuevoEstado === 'Asignado') {
+                // ALERTA solo si quedó asignado, formato AM/PM
+                alert(`✅ Se envió un mensaje al número ${turno.numeroCelular} con el nombre ${turno.apellidoNombre} y el Registro Ras ${formatoHoraAMPM(fechaRas)}`);
+              }
+            } catch (err) {
+              alert('Error al actualizar turno: ' + err);
+            }
+          });
+
+        });
+      } catch (error) {
+        console.error('Error al cargar los turnos:', error);
+      }
+    }
+
+    window.onload = cargarTurnos;
+  </script>
+</body>
+</html>
