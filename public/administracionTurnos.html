@@ -76,16 +76,30 @@
   </table>
 
   <script>
-    // Función para convertir datetime-local a formato hh:mm AM/PM
-    function formatoHoraAMPM(datetime) {
-      const date = new Date(datetime);
-      let hours = date.getHours();
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12; // si es 0, poner 12
-      return `${hours}:${minutes} ${ampm}`;
-    }
+    // Devuelve "DD/MM/YYYY hh:mm AM/PM"
+function formatoFechaHoraAMPM(datetime) {
+  let date = new Date(datetime);
+  // Fallback por si viene "YYYY-MM-DD HH:mm" (sin la T)
+  if (isNaN(date)) {
+    date = new Date(datetime.replace(' ', 'T'));
+  }
+  if (isNaN(date)) return datetime; // último recurso: devuelve tal cual
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+
+  return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+}
+
+
+
+
 
     async function cargarTurnos() {
       try {
@@ -151,7 +165,8 @@
                 alert('Error al actualizar turno: ' + data.error);
               } else if (nuevoEstado === 'Asignado') {
                 // ALERTA solo si quedó asignado, formato AM/PM
-                alert(`✅ Se envió un mensaje al número ${turno.numeroCelular} con el nombre ${turno.apellidoNombre} y el Registro Ras ${formatoHoraAMPM(fechaRas)}`);
+               alert(`✅ Se envió un mensaje al número ${turno.numeroCelular} con el nombre ${turno.apellidoNombre} y el Registro Ras ${formatoFechaHoraAMPM(fechaRas)}`);
+
               }
             } catch (err) {
               alert('Error al actualizar turno: ' + err);
