@@ -21,7 +21,8 @@ app.get('/api/turnos', (req, res) => {
     preferenciaHorariaPaciente,
     rangoHorarioPacientes,
     registroRas,
-    estadoRegistro
+    estadoRegistro,
+    motivoConsulta
     FROM turnos
     ORDER BY registroRas DESC`;
   db.all(sql, [], (err, rows) => {
@@ -47,8 +48,9 @@ app.post('/api/guardar-turno', (req, res) => {
     preferenciaHorariaPaciente,
     rangoHorarioPacientes,
     registroRas,
-    estadoRegistro
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    estadoRegistro,
+    motivoConsulta
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const params = [
     t.dni,
@@ -62,7 +64,8 @@ app.post('/api/guardar-turno', (req, res) => {
     t.preferenciaHorariaPaciente,
     t.rangoHorarioPacientes,
     t.registroRas,
-    t.estadoRegistro
+    t.estadoRegistro,
+    t.motivoConsulta || '' // <-- nuevo campo, por si no viene vacío
   ];
 
   db.run(sql, params, function(err) {
@@ -94,7 +97,57 @@ app.post('/api/actualizar-turno', (req, res) => {
 });
 
 
+// ============================
+// API Consultas
+// ============================
 
+// Obtener todas las consultas
+app.get('/api/consultas', (req, res) => {
+  const sql = `SELECT id, paciente, motivo, fecha
+               FROM consultas
+               ORDER BY fecha DESC`;
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);
+  });
+});
+
+// Guardar nueva consulta
+app.post('/api/consultas', (req, res) => {
+  const { paciente, motivo } = req.body;
+  if (!paciente || !motivo) {
+    return res.status(400).json({ mensaje: 'Faltan datos obligatorios' });
+  }
+
+  const fecha = new Date().toISOString();
+  const sql = `INSERT INTO consultas (paciente, motivo, fecha) VALUES (?, ?, ?)`;
+  const params = [paciente, motivo, fecha];
+
+  db.run(sql, params, function(err) {
+    if (err) {
+      return res.status(500).json({ mensaje: err.message });
+    }
+    res.json({ success: true, id: this.lastID });
+  });
+});
+
+// Borrar una consulta
+app.post('/api/consultas/borrar', (req, res) => {
+  const { id } = req.body;
+  if (!id) {
+    return res.status(400).json({ success: false, mensaje: 'Falta el ID' });
+  }
+
+  const sql = `DELETE FROM consultas WHERE id = ?`;
+  db.run(sql, [id], function(err) {
+    if (err) {
+      return res.status(500).json({ success: false, mensaje: err.message });
+    }
+    res.json({ success: true, cambios: this.changes });
+  });
+});
 
 
 
