@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Solicitud de Recetas y Certificados</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #0057b7;
+    }
+    form {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #0057b7;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #004099;
+    }
+    #resultado {
+      display: none;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #e6f7ff;
+      border-radius: 12px;
+      border: 1px solid #b3e5fc;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #resultado h2 {
+      margin-top: 0;
+      color: green;
+    }
+    #resultado ul {
+      list-style: none;
+      padding: 0;
+    }
+    #resultado li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solicitud de Recetas / Certificados</h1>
+
+  <form id="solicitudForm">
+    <label for="nombre">Apellido y Nombre:</label>
+    <input type="text" id="nombre" name="nombre" required>
+
+    <label for="dni">DNI:</label>
+    <input type="text" id="dni" name="dni" required>
+
+    <label for="obra">Obra Social:</label>
+    <input type="text" id="obra" name="obra">
+
+    <label for="plan">Plan:</label>
+    <input type="text" id="plan" name="plan">
+
+    <label for="afiliado">Número de Afiliado:</label>
+    <input type="text" id="afiliado" name="afiliado">
+
+    <label for="nacimiento">Fecha de Nacimiento:</label>
+    <input type="date" id="nacimiento" name="nacimiento">
+
+    <label for="medicacion">Medicación (cantidad - medida):</label>
+    <textarea id="medicacion" name="medicacion"></textarea>
+
+    <label for="mail">Mail:</label>
+    <input type="email" id="mail" name="mail">
+
+    <label for="telefono">Número Teléfono Celular:</label>
+    <input type="tel" id="telefono" name="telefono">
+
+    <label for="token">Número de Token (si aplica según la obra social):</label>
+    <input type="text" id="token" name="token">
+
+    <button type="submit">Enviar Solicitud</button>
+  </form>
+
+  <div id="resultado"></div>
+
+  <script>
+    document.getElementById("solicitudForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      // capturar datos
+      const formData = new FormData(this);
+      let resumen = "<h2>✅ Solicitud registrada</h2><ul>";
+      formData.forEach((valor, campo) => {
+        resumen += `<li><strong>${campo}:</strong> ${valor}</li>`;
+      });
+      resumen += "</ul>";
+
+      // ocultar formulario y mostrar resumen
+      document.getElementById("solicitudForm").style.display = "none";
+      const resultado = document.getElementById("resultado");
+      resultado.innerHTML = resumen;
+      resultado.style.display = "block";
+
+      // ⏳ después de 6 segundos volver al menú principal
+      setTimeout(() => {
+        window.location.href = "http://localhost:4000/";
+      }, 6000);
+    });
+  </script>
+</body>
+</html>

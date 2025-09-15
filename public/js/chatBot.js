@@ -21,7 +21,7 @@ Soy el asistente virtual. Nuestro horario de atención es de 9:00 hs a 20:00 hs.
   { texto: "Seleccioná la fecha del turno:", tipo: "fecha-turno" },
   { texto: "¿Qué turno preferís? Escribí:\nmañana\ntarde", tipo: "text" },
   { texto: "Seleccioná el rango horario:", tipo: "time-doble" },
-  { texto: "Motivo de consulta:", tipo: "motivo" }
+  { texto: "Motivo de consulta:", tipo: "motivo" } // <-- aparece solo en Oftalmología
 ];
 
 let pasoActual = 0;
@@ -70,19 +70,20 @@ function mostrarInput(pregunta) {
     return;
   }
 
-  if (pregunta.tipo === "motivo") {
+  // --- Motivo de consulta: SOLO en Oftalmología (1) ---
+  if (pregunta.tipo === "motivo" && especialidadElegida === "1") {
     mostrarMensajeBot("Seleccioná el motivo de consulta:");
     const btn1 = document.createElement("button");
     btn1.textContent = "Control general";
     btn1.onclick = () => {
-        inputArea.innerHTML = ""; // <-- ocultar botones después de elegir
+        inputArea.innerHTML = ""; // ocultar botones después de elegir
         guardarRespuesta("Control general");
     };
 
     const btn2 = document.createElement("button");
     btn2.textContent = "Estudio";
     btn2.onclick = () => {
-        inputArea.innerHTML = ""; // <-- ocultar botones después de elegir
+        inputArea.innerHTML = ""; // ocultar botones después de elegir
         guardarRespuesta("Estudio");
     };
 
@@ -91,10 +92,35 @@ function mostrarInput(pregunta) {
     return;
   }
 
+  // --- 🚀 time-doble: pedir dos horarios ---
+  if (pregunta.tipo === "time-doble") {
+    mostrarMensajeBot("Seleccioná dos horarios:");
+
+    const input1 = document.createElement("input");
+    input1.type = "time";
+    input1.placeholder = "Horario 1";
+
+    const input2 = document.createElement("input");
+    input2.type = "time";
+    input2.placeholder = "Horario 2";
+
+    const btn = document.createElement("button");
+    btn.textContent = "Enviar";
+    btn.addEventListener("click", () => {
+      if (input1.value && input2.value) {
+        guardarRespuesta(`${input1.value} - ${input2.value}`);
+      }
+    });
+
+    inputArea.appendChild(input1);
+    inputArea.appendChild(input2);
+    inputArea.appendChild(btn);
+    return;
+  }
+
+  // --- Código genérico ---
   const input = document.createElement("input");
-  input.type = pregunta.tipo === "time-doble" ? "time" :
-               pregunta.tipo === "fecha-turno" ? "date" :
-               pregunta.tipo;
+  input.type = pregunta.tipo === "fecha-turno" ? "date" : pregunta.tipo;
   input.placeholder = pregunta.texto;
 
   const btn = document.createElement("button");
@@ -128,6 +154,14 @@ function guardarRespuesta(respuesta) {
 function siguientePregunta() {
   if (pasoActual < preguntas.length) {
     const pregunta = preguntas[pasoActual];
+
+    // ⚡ Si la pregunta es "motivo" y NO es Oftalmología, la salteamos
+    if (pregunta.tipo === "motivo" && especialidadElegida !== "1") {
+      pasoActual++;
+      siguientePregunta();
+      return;
+    }
+
     mostrarMensajeBot(pregunta.texto);
     mostrarInput(pregunta);
   } else {
@@ -141,8 +175,6 @@ siguientePregunta();
 
 // --- Envío al backend con motivoConsulta ---
 function enviarTurnoAlBackend() {
-  const anioActual = new Date().getFullYear();
-
   const turno = {
     dni: respuestas[3],
     apellidoNombre: `${respuestas[2]} ${respuestas[1]}`,
@@ -156,7 +188,7 @@ function enviarTurnoAlBackend() {
     rangoHorarioPacientes: respuestas[10],
     registroRas: new Date().toISOString(),
     estadoRegistro: "pendiente",
-    motivoConsulta: respuestas[11] // <-- NUEVO CAMPO agregado
+    motivoConsulta: respuestas[11] || null // null si no corresponde
   };
 
   fetch("/api/guardar-turno", {
