@@ -151,7 +151,17 @@ app.post('/api/consultas/borrar', (req, res) => {
 
 
 
+// Endpoint para borrar en administracion turno
+app.post('/api/borrar-turno', (req, res) => {
+  const { dni } = req.body;
+  if (!dni) return res.json({ error: 'Falta DNI' });
 
+  const sql = 'DELETE FROM turnos WHERE dni = ?';
+  db.run(sql, [dni], function(err) {
+    if (err) return res.json({ error: err.message });
+    res.json({ success: true });
+  });
+});
 
 
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Administración de Turnos - </title>
+  <title>Administración de Turnos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -49,6 +49,12 @@
       font-size: 12px;
       cursor: pointer;
     }
+    button.btn-borrar {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -66,9 +72,10 @@
         <th>Fecha Solicitada</th>
         <th>Preferencia Horaria</th>
         <th>Rango Horario</th>
-        <th>Motivo Consulta</th> <!-- NUEVA COLUMNA -->
+        <th>Motivo Consulta</th>
         <th>Registro Ras</th>
         <th>Estado</th>
+        <th>Acciones</th> <!-- NUEVA COLUMNA BORRAR -->
       </tr>
     </thead>
     <tbody>
@@ -119,15 +126,16 @@
             <td>${turno.fechaSolicitadaPaciente}</td>
             <td>${turno.preferenciaHorariaPaciente}</td>
             <td>${turno.rangoHorarioPacientes}</td>
-            <td>${turno.motivoConsulta || ''}</td> <!-- MOSTRAR NUEVO CAMPO -->
+            <td>${turno.motivoConsulta || ''}</td>
             <td><input type="datetime-local" id="registro-${turno.dni}" value="${registroRasValue}"></td>
             <td><button class="estado-btn" id="btn-${turno.dni}">${estadoBtnText}</button></td>
+            <td><button class="btn-borrar" id="borrar-${turno.dni}">Borrar</button></td>
           `;
           tbody.appendChild(tr);
 
+          // Evento de cambiar estado
           const btn = document.getElementById(`btn-${turno.dni}`);
           const input = document.getElementById(`registro-${turno.dni}`);
-
           btn.addEventListener('click', async () => {
             const fechaRas = input.value;
             if (!fechaRas) {
@@ -155,6 +163,28 @@
               }
             } catch (err) {
               alert('Error al actualizar turno: ' + err);
+            }
+          });
+
+          // Evento de borrar
+          const btnBorrar = document.getElementById(`borrar-${turno.dni}`);
+          btnBorrar.addEventListener('click', async () => {
+            if (confirm(`¿Estás seguro que querés borrar el turno de ${turno.apellidoNombre}?`)) {
+              // Borrar del DOM
+              tr.remove();
+
+              // Borrar en la base de datos (opcional)
+              try {
+                const res = await fetch('/api/borrar-turno', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ dni: turno.dni })
+                });
+                const data = await res.json();
+                if (data.error) alert('Error al borrar turno: ' + data.error);
+              } catch (err) {
+                alert('Error al borrar turno: ' + err);
+              }
             }
           });
         });
